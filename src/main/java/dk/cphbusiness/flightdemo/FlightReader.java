@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Purpose:
@@ -27,10 +28,11 @@ public class FlightReader {
         FlightReader flightReader = new FlightReader();
         try {
             List<DTOs.FlightDTO> flightList = flightReader.getFlightsFromFile("flights.json");
-            List<DTOs.FlightInfo> flightInfoList = flightReader.getFlightInfoDetails(flightList);
-            flightInfoList.forEach(f->{
-                System.out.println("\n"+f);
-            });
+            String airlineName = "Lufthansa";
+            Duration totalDuration = (flightReader.getTotalFlightDuration(flightList, airlineName));
+            System.out.println("Total flight duration for " + airlineName + ": " + totalDuration.toHours() + " hours");
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -69,5 +71,13 @@ public class FlightReader {
         return flightList;
     }
 
+    public Duration getTotalFlightDuration(List<DTOs.FlightDTO> flightList, String airlineName) {
+        Duration totalDuration = flightList.stream()
+                .filter(flight -> flight.getAirline() != null && airlineName.equals(flight.getAirline().getName()))  // Check for null
+                .map(flight -> Duration.between(flight.getDeparture().getScheduled(), flight.getArrival().getScheduled()))
+                .reduce(Duration.ZERO, Duration::plus);
+
+        return totalDuration;
+    }
 
 }
