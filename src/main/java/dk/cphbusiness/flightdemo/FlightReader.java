@@ -26,12 +26,20 @@ public class FlightReader {
 
     public static void main(String[] args) {
         FlightReader flightReader = new FlightReader();
+
         try {
             List<DTOs.FlightDTO> flightList = flightReader.getFlightsFromFile("flights.json");
             String airlineName = "Lufthansa";
             Duration totalDuration = (flightReader.getTotalFlightDuration(flightList, airlineName));
             System.out.println("Total flight duration for " + airlineName + ": " + totalDuration.toHours() + " hours");
 
+
+            List<DTOs.FlightInfo> flightInfoList = flightReader.getFlightInfoDetails(flightList);
+            flightInfoList.forEach(f->{
+                System.out.println("\n"+f);
+            });
+            String airlineName = "Royal Jordanian";
+            printAverageFlightTimeForAirline(flightInfoList, airlineName);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -62,7 +70,9 @@ public class FlightReader {
             return flightInfo;
         }).toList();
         return flightInfoList;
+
     }
+
 
     public List<DTOs.FlightDTO> getFlightsFromFile(String filename) throws IOException {
         DTOs.FlightDTO[] flights = new Utils().getObjectMapper().readValue(Paths.get(filename).toFile(), DTOs.FlightDTO[].class);
@@ -70,6 +80,28 @@ public class FlightReader {
         List<DTOs.FlightDTO> flightList = Arrays.stream(flights).toList();
         return flightList;
     }
+
+    public static void printAverageFlightTimeForAirline(List<DTOs.FlightInfo> flightInfoList, String airlineName) {
+
+        List<DTOs.FlightInfo> filteredFlights = flightInfoList.stream()
+                .filter(flightInfo -> airlineName.equals(flightInfo.getAirline()))
+                .collect(Collectors.toList());
+
+        if (filteredFlights.isEmpty()) {
+            System.out.println("No flights found for airline: " + airlineName);
+            return;
+        }
+
+        Duration totalDuration = filteredFlights.stream()
+                .map(DTOs.FlightInfo::getDuration)
+                .reduce(Duration.ZERO, Duration::plus);
+
+        long averageMinutes = totalDuration.toMinutes() / filteredFlights.size();
+
+        System.out.println("Average flight time for airline " + airlineName + " is " + averageMinutes + " minutes.");
+    }
+
+
 
     public Duration getTotalFlightDuration(List<DTOs.FlightDTO> flightList, String airlineName) {
         Duration totalDuration = flightList.stream()
